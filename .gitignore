@@ -1,0 +1,16 @@
+node_modules
+
+#Buidler files
+cache
+artifacts
+.openzeppelin
+
+#MISC
+Close
+
+package-lock.json
+.vscode/
+
+.env
+
+flat
