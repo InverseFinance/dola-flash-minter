@@ -50,7 +50,7 @@ contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         // Step 3: Retrieve (minted + fee) Dola from receiver
         dola.safeTransferFrom(address(receiver), address(this), value + fee);
 
-        // Step 4: Burn minted Dola (fees accumulate in contract)
+        // Step 4: Burn minted Dola (and leave accrued fees in contract)
         dola.burn(value);
 
         flashMinted = flashMinted - value;
