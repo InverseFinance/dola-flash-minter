@@ -57,7 +57,7 @@ contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         return true;
     }
 
-    // Collect fees and retreive any tokens sent to this contract by mistake
+    // Collect fees and retrieve any tokens sent to this contract by mistake
     function collect(address _token) external {
         if (_token == address(0)) {
             Address.sendValue(payable(treasury), address(this).balance);
