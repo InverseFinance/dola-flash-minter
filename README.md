@@ -11,4 +11,5 @@ TBD
 
 ## Deployment
 
+- copy `.env.example` to `.env` and fill in all variable fields
 - run `npx hardhat run scripts/deploy-flashMinter.js --network mainnet` to deploy contract to mainnet
