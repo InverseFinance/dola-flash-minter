@@ -11,4 +11,4 @@ TBD
 
 ## Deployment
 
-- run `npx hardhat run scripts/deploy.js --network mainnet` to deploy contract to mainnet
+- run `npx hardhat run scripts/deploy-flashMinter.js --network mainnet` to deploy contract to mainnet
