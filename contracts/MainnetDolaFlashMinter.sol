@@ -12,5 +12,8 @@ contract MainnetDolaFlashMinter is DolaFlashMinter {
             // Mainnet Inverse Treasury
             0x926dF14a23BE491164dCF93f4c468A50ef659D5B
         )
-    {}
+    // solhint-disable-next-line no-empty-blocks
+    {
+
+    }
 }
