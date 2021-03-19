@@ -8,6 +8,13 @@ import "./utils/Address.sol";
 import "./ERC20/IERC20.sol";
 import "./ERC20/SafeERC20.sol";
 
+/**
+ * @title Dola Flash Minter
+ * @notice Allow users to mint an arbitrary amount of DOLA without collateral
+ *         as long as this amount is repaid within a single transaction.
+ * @dev This contract is abstract, any concrete implementation must have the DOLA
+ *      token address hardcoded in the contract to facilitate code auditing.
+ */
 abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
     using SafeERC20 for IERC20;
     using Address for address;

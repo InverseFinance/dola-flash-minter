@@ -1,6 +1,5 @@
 import { config as dotenvConfig } from "dotenv";
 import { resolve } from "path";
-dotenvConfig({ path: resolve(__dirname, "./.env") });
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-contract-sizer";
 import { HardhatUserConfig } from "hardhat/config";
@@ -11,6 +10,7 @@ import "hardhat-typechain";
 import "solidity-coverage";
 import "./tasks/accounts";
 import "./tasks/clean";
+dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
   ganache: 1337,
@@ -52,7 +52,7 @@ if (!process.env.ALCHEMY_TOKEN) {
 }
 
 function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
+  const url = `https://${network}.infura.io/v3/${infuraApiKey}`;
   return {
     accounts: {
       count: 10,
