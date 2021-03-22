@@ -9,7 +9,7 @@ import { DolaFlashMinter } from "../../typechain";
 use(solidity);
 
 // Hardhat currently does not support mock interaction verification. We use the waffle provider directly in these tests
-describe("Dola flash minter mock interactions", function () {
+describe("Dola flash minter mock interactions", () => {
   let mockDola: MockContract;
   let mockBorrower: MockContract;
 
@@ -25,10 +25,11 @@ describe("Dola flash minter mock interactions", function () {
       mockDola.address,
       treasuryWallet.address,
     ])) as DolaFlashMinter;
+    await mockDola.mock.totalSupply.returns(10000);
   });
 
-  describe("Flash Loans", async function () {
-    it("calls dependencies with correct values", async function () {
+  describe("Flash Loans", async () => {
+    it("calls dependencies with correct values", async () => {
       await mockDola.mock.mint.returns();
       await mockDola.mock.burn.returns();
       await mockDola.mock.transferFrom.returns(true);

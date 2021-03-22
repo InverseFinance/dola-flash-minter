@@ -23,12 +23,26 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
     event FlashLoanRateUpdated(uint256 oldRate, uint256 newRate);
     event TreasuryUpdated(address oldTreasury, address newTreasury);
 
+    uint256 private constant NULL = 1;
     IERC20 public immutable dola;
     address public treasury;
     uint256 public flashMinted;
     uint256 public flashLoanRate = 0.0008 ether;
+    uint256 private _callCounter = NULL;
+    uint256 private _initialDolaSupply = NULL;
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
+
+    modifier idempotentReentrancy() {
+        if (_callCounter == NULL) _initialDolaSupply = dola.totalSupply();
+        _callCounter = _callCounter + 1;
+        _;
+        _callCounter = _callCounter - 1;
+        if (_callCounter == NULL) {
+            require(_initialDolaSupply == dola.totalSupply(), "FLASH_MINTER:UNACCOUNTED_BALANCE");
+            _initialDolaSupply = NULL;
+        }
+    }
 
     constructor(address _dola, address _treasury) {
         require(_dola.isContract(), "FLASH_MINTER:INVALID_DOLA");
@@ -42,7 +56,7 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         address token,
         uint256 value,
         bytes calldata data
-    ) external override returns (bool) {
+    ) external override idempotentReentrancy returns (bool) {
         require(token == address(dola), "FLASH_MINTER:NOT_DOLA");
         require(value <= type(uint112).max, "FLASH_MINTER:INDIVIDUAL_LIMIT_BREACHED");
         flashMinted = flashMinted + value;

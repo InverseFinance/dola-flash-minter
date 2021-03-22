@@ -13,7 +13,7 @@ import {
   sudo_TransferToken,
 } from "../utils/integration";
 
-describe("Flash loan integration", function () {
+describe("Flash loan integration", () => {
   let myWallet: Signer;
   let dolaContract: Erc20;
   let borrower: TestFlashBorrower;
@@ -28,15 +28,15 @@ describe("Flash loan integration", function () {
     await sudo_AddDolaMinter(flashMinter.address);
   });
 
-  describe("Flash mint", function () {
-    it("Borrow once", async function () {
+  describe("Flash mint", () => {
+    it("Borrow once", async () => {
       const loanAmount = utils.parseUnits("100000000.0", DOLA_DECIMALS);
       await expect(borrower.borrow(loanAmount, 1))
         .to.emit(flashMinter, "FlashLoan")
         .withArgs(borrower.address, dolaContract.address, loanAmount);
     });
 
-    it("Borrow trice", async function () {
+    it("Borrow trice", async () => {
       const loanAmount = utils.parseUnits("30000000.0", DOLA_DECIMALS);
       await expect(borrower.borrow(loanAmount, 3))
         .to.emit(flashMinter, "FlashLoan")
