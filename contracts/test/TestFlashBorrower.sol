@@ -5,6 +5,10 @@ import "../interfaces/IERC3156FlashBorrower.sol";
 import "../interfaces/IERC3156FlashLender.sol";
 import "../ERC20/IERC20.sol";
 
+/* @dev THIS IS AN UNSAFE TEST IMPLEMENTATION. DO NOT USE.
+ *      For the reference implementation see:
+ *      https://eips.ethereum.org/EIPS/eip-3156
+ */
 contract TestFlashBorrower is IERC3156FlashBorrower {
     IERC20 public immutable dola;
     IERC3156FlashLender public immutable lender;
@@ -29,6 +33,7 @@ contract TestFlashBorrower is IERC3156FlashBorrower {
         uint256,
         bytes calldata data
     ) external override returns (bytes32) {
+        // In real life we would check lender and initiator
         if (times > 0) {
             times = times - 1;
             lender.flashLoan(IERC3156FlashBorrower(this), token, amount, data);
