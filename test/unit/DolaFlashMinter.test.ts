@@ -6,7 +6,7 @@ import IERC3156FlashBorrowerABI from "../../artifacts/contracts/interfaces/IERC3
 import MockDolaABI from "../../artifacts/contracts/test/MockDola.sol/MockDola.json";
 import DolaFlashMinterABI from "../../artifacts/contracts/test/TestDolaFlashMinter.sol/TestDolaFlashMinter.json";
 import { DolaFlashMinter } from "../../typechain";
-import { ETH } from "../utils/utils";
+import { DOLA, ETH } from "../utils/utils";
 
 describe("Dola Flash Minter", function () {
   let mockDola: Contract;
@@ -32,12 +32,14 @@ describe("Dola Flash Minter", function () {
   describe("Flash Loan", async function () {
     it("performs flash loan correctly", async function () {
       await mockBorrower.mock.onFlashLoan.returns(await contract.CALLBACK_SUCCESS());
+      const loanAmount = DOLA("1000000.0");
+      const fee = await contract.flashFee(mockDola.address, loanAmount);
+      await mockDola.mint(mockBorrower.address, fee);
+      await mockDola.godApprove(mockBorrower.address, contract.address, fee.add(loanAmount));
 
       const initialTotalSupply = await mockDola.totalSupply();
       const initialMinterBalance = await mockDola.balanceOf(contract.address);
-      const loanAmount = 1000;
-      const fee = await contract.flashFee(mockDola.address, loanAmount);
-      await mockDola.godApprove(mockBorrower.address, contract.address, fee.add(loanAmount));
+      const initialBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
 
       await expect(contract.flashLoan(mockBorrower.address, mockDola.address, loanAmount, utils.toUtf8Bytes("invader")))
         .to.emit(contract, "FlashLoan")
@@ -45,9 +47,11 @@ describe("Dola Flash Minter", function () {
 
       const finalMinterBalance = await mockDola.balanceOf(contract.address);
       const finalTotalSupply = await mockDola.totalSupply();
+      const finalBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
 
       expect(finalTotalSupply).to.be.equal(initialTotalSupply);
       expect(finalMinterBalance.sub(initialMinterBalance)).to.be.equal(fee);
+      expect(initialBorrowerBalance.sub(finalBorrowerBalance)).to.be.equal(fee);
       expect(await contract.flashMinted()).to.be.equal(constants.Zero);
     });
 
@@ -95,11 +99,66 @@ describe("Dola Flash Minter", function () {
       await expect(
         contract.flashLoan(mockBorrower.address, mockDola.address, loanAmount, utils.toUtf8Bytes("invader")),
       ).to.be.revertedWith("FLASH_MINTER:INDIVIDUAL_LIMIT_BREACHED");
+
       const finalMinterBalance = await mockDola.balanceOf(contract.address);
       const finalTotalSupply = await mockDola.totalSupply();
 
       expect(finalTotalSupply).to.be.equal(initialTotalSupply);
       expect(finalMinterBalance).to.be.equal(initialMinterBalance);
+      expect(await contract.flashMinted()).to.be.equal(constants.Zero);
+    });
+
+    it("fails without enough allowance", async function () {
+      await mockBorrower.mock.onFlashLoan.returns(await contract.CALLBACK_SUCCESS());
+      const loanAmount = DOLA("1000000.0");
+      const fee = await contract.flashFee(mockDola.address, loanAmount);
+      const mintedBalance = fee;
+      await mockDola.mint(mockBorrower.address, mintedBalance);
+      await mockDola.godApprove(mockBorrower.address, contract.address, fee.add(loanAmount).sub(1));
+
+      const initialTotalSupply = await mockDola.totalSupply();
+      const initialMinterBalance = await mockDola.balanceOf(contract.address);
+      const initialBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
+
+      await expect(
+        contract.flashLoan(mockBorrower.address, mockDola.address, loanAmount, utils.toUtf8Bytes("invader")),
+      ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+
+      const finalMinterBalance = await mockDola.balanceOf(contract.address);
+      const finalTotalSupply = await mockDola.totalSupply();
+      const finalBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
+
+      expect(finalTotalSupply).to.be.equal(initialTotalSupply);
+      expect(finalMinterBalance).to.be.equal(initialMinterBalance);
+      expect(initialBorrowerBalance).to.be.equal(finalBorrowerBalance);
+
+      expect(await contract.flashMinted()).to.be.equal(constants.Zero);
+    });
+
+    it("fails without enough balance", async function () {
+      await mockBorrower.mock.onFlashLoan.returns(await contract.CALLBACK_SUCCESS());
+      const loanAmount = DOLA("1000000.0");
+      const fee = await contract.flashFee(mockDola.address, loanAmount);
+      const mintedBalance = fee.sub(1);
+      await mockDola.mint(mockBorrower.address, mintedBalance);
+      await mockDola.godApprove(mockBorrower.address, contract.address, fee.add(loanAmount));
+
+      const initialTotalSupply = await mockDola.totalSupply();
+      const initialMinterBalance = await mockDola.balanceOf(contract.address);
+      const initialBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
+
+      await expect(
+        contract.flashLoan(mockBorrower.address, mockDola.address, loanAmount, utils.toUtf8Bytes("invader")),
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+
+      const finalMinterBalance = await mockDola.balanceOf(contract.address);
+      const finalTotalSupply = await mockDola.totalSupply();
+      const finalBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
+
+      expect(finalTotalSupply).to.be.equal(initialTotalSupply);
+      expect(finalMinterBalance).to.be.equal(initialMinterBalance);
+      expect(initialBorrowerBalance).to.be.equal(finalBorrowerBalance);
+
       expect(await contract.flashMinted()).to.be.equal(constants.Zero);
     });
   });
@@ -122,7 +181,7 @@ describe("Dola Flash Minter", function () {
     it("collects token", async function () {
       const treasuryAddress = await treasuryWallet.getAddress();
       const initialBalance = await mockDola.balanceOf(treasuryAddress);
-      const depositedDola = ETH("1.0");
+      const depositedDola = DOLA("1.0");
       await mockDola.mint(contract.address, depositedDola);
 
       await contract.collect(mockDola.address);

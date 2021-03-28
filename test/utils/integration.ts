@@ -11,13 +11,13 @@ dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const SAFE_CHECKPOINT = 12035088;
 export const NOUR = "0x3fcb35a1cbfb6007f9bc638d388958bc4550cb28";
-export const DOLA = "0x865377367054516e17014CcdED1e7d814EDC9ce4";
+export const DOLA_ADDRESS = "0x865377367054516e17014CcdED1e7d814EDC9ce4";
 export const DOLA_WHALE = "0x41f6e96fa35b6dd35044e171e0f6d163a3a77f53";
 export const DOLA_DECIMALS = 18;
 
 export async function sudo_AddDolaMinter(minter: string): Promise<void> {
   return sudo(NOUR, (signer: Signer) => {
-    const tokenContract = new Contract(DOLA, IDolaABI.abi, signer) as IDola;
+    const tokenContract = new Contract(DOLA_ADDRESS, IDolaABI.abi, signer) as IDola;
     return tokenContract.addMinter(minter);
   });
 }

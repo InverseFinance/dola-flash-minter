@@ -5,6 +5,7 @@ import IERC3156FlashBorrowerABI from "../../artifacts/contracts/interfaces/IERC3
 import MockDolaABI from "../../artifacts/contracts/test/MockDola.sol/MockDola.json";
 import DolaFlashMinterABI from "../../artifacts/contracts/test/TestDolaFlashMinter.sol/TestDolaFlashMinter.json";
 import { DolaFlashMinter } from "../../typechain";
+import { DOLA } from "../utils/utils";
 
 use(solidity);
 
@@ -33,7 +34,7 @@ describe("Dola flash minter mock interactions", function () {
       await mockDola.mock.burn.returns();
       await mockDola.mock.transferFrom.returns(true);
       await mockBorrower.mock.onFlashLoan.returns(await contract.CALLBACK_SUCCESS());
-      const loanAmount = 1000;
+      const loanAmount = DOLA("1000000");
       const fee = await contract.flashFee(mockDola.address, loanAmount);
 
       const data = utils.toUtf8Bytes("invader");
