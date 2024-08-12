@@ -27,6 +27,7 @@ describe("Dola Flash Minter", function () {
       treasuryWallet.address,
     ])) as DolaFlashMinter;
     contractAsUser = contract.connect(userWallet);
+    await contract.setMaxFlashLimit(DOLA("1000000.0"));
   });
 
   describe("Flash Loan", async function () {
@@ -211,6 +212,16 @@ describe("Dola Flash Minter", function () {
       expect(await contract.treasury()).to.be.equal(newTreasury);
     });
 
+    it("emits event when setting max flash limit", async function () {
+      const previousLimit = await contract.maxFlashLimit();
+      const newLimit = DOLA("5000.0");
+      await expect(contract.setMaxFlashLimit(newLimit))
+        .to.emit(contract, "MaxFlashLimitUpdated")
+        .withArgs(previousLimit, newLimit);
+
+      expect(await contract.maxFlashLimit()).to.be.equal(newLimit);
+    });
+
     it("fails when setting treasury with zero address", async function () {
       const previousTreasury = await contract.treasury();
       await expect(contract.setTreasury(constants.AddressZero)).to.be.revertedWith("FLASH_MINTER:INVALID_TREASURY");
@@ -244,6 +255,10 @@ describe("Dola Flash Minter", function () {
   describe("ACL", async function () {
     it("forbids non owner to set flash loan rate", async function () {
       await expect(contractAsUser.setFlashLoanRate(10)).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("forbids non owner to set max flash limit", async function () {
+      await expect(contractAsUser.setMaxFlashLimit(10)).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("forbids non owner to set treasury", async function () {

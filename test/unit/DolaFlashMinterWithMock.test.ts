@@ -26,6 +26,7 @@ describe("Dola flash minter mock interactions", function () {
       mockDola.address,
       treasuryWallet.address,
     ])) as DolaFlashMinter;
+    await contract.setMaxFlashLimit(DOLA("1000000000.0"));
   });
 
   describe("Flash Loans", async function () {

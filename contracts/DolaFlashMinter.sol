@@ -22,11 +22,13 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
     event FlashLoan(address receiver, address token, uint256 value);
     event FlashLoanRateUpdated(uint256 oldRate, uint256 newRate);
     event TreasuryUpdated(address oldTreasury, address newTreasury);
+    event MaxFlashLimitUpdated(uint256 oldLimit, uint256 newLimit);
 
     IERC20 public immutable dola;
     address public treasury;
     uint256 public flashMinted;
     uint256 public flashLoanRate = 0.0008 ether;
+    uint256 public maxFlashLimit;
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
@@ -44,9 +46,9 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         bytes calldata data
     ) external override returns (bool) {
         require(token == address(dola), "FLASH_MINTER:NOT_DOLA");
-        require(value <= type(uint112).max, "FLASH_MINTER:INDIVIDUAL_LIMIT_BREACHED");
+        require(value <= maxFlashLimit, "FLASH_MINTER:INDIVIDUAL_LIMIT_BREACHED");
         flashMinted = flashMinted + value;
-        require(flashMinted <= type(uint112).max, "total loan limit exceeded");
+        require(flashMinted <= maxFlashLimit, "total loan limit exceeded");
 
         // Step 1: Mint Dola to receiver
         dola.mint(address(receiver), value);
@@ -87,6 +89,11 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         require(_newTreasury != address(0), "FLASH_MINTER:INVALID_TREASURY");
         emit TreasuryUpdated(treasury, _newTreasury);
         treasury = _newTreasury;
+    }
+
+    function setMaxFlashLimit(uint256 _newLimit) external onlyOwner {
+        emit MaxFlashLimitUpdated(maxFlashLimit, _newLimit);
+        maxFlashLimit = _newLimit;
     }
 
     function maxFlashLoan(address _token) external view override returns (uint256) {
