@@ -232,7 +232,7 @@ describe("Dola Flash Minter", function () {
   describe("Views", async function () {
     it("returns max flash loan amount with dola", async function () {
       const maxLoan = await contract.maxFlashLoan(mockDola.address);
-      expect(maxLoan).to.be.equal(BigNumber.from(2).pow(112).sub(1));
+      expect(maxLoan).to.be.equal(DOLA("1000000.0"));
     });
 
     it("returns max flash loan amount with non dola", async function () {

@@ -97,7 +97,7 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
     }
 
     function maxFlashLoan(address _token) external view override returns (uint256) {
-        return _token == address(dola) ? type(uint112).max - flashMinted : 0;
+        return _token == address(dola) ? maxFlashLimit - flashMinted : 0;
     }
 
     function flashFee(address _token, uint256 _value) public view override returns (uint256) {
