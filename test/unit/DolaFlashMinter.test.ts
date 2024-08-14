@@ -27,6 +27,7 @@ describe("Dola Flash Minter", function () {
       treasuryWallet.address,
     ])) as DolaFlashMinter;
     contractAsUser = contract.connect(userWallet);
+    await contract.setMaxFlashLimit(DOLA("1000000.0"));
   });
 
   describe("Flash Loan", async function () {
@@ -134,33 +135,6 @@ describe("Dola Flash Minter", function () {
 
       expect(await contract.flashMinted()).to.be.equal(constants.Zero);
     });
-
-    it("fails without enough balance", async function () {
-      await mockBorrower.mock.onFlashLoan.returns(await contract.CALLBACK_SUCCESS());
-      const loanAmount = DOLA("1000000.0");
-      const fee = await contract.flashFee(mockDola.address, loanAmount);
-      const mintedBalance = fee.sub(1);
-      await mockDola.mint(mockBorrower.address, mintedBalance);
-      await mockDola.godApprove(mockBorrower.address, contract.address, fee.add(loanAmount));
-
-      const initialTotalSupply = await mockDola.totalSupply();
-      const initialMinterBalance = await mockDola.balanceOf(contract.address);
-      const initialBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
-
-      await expect(
-        contract.flashLoan(mockBorrower.address, mockDola.address, loanAmount, utils.toUtf8Bytes("invader")),
-      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
-
-      const finalMinterBalance = await mockDola.balanceOf(contract.address);
-      const finalTotalSupply = await mockDola.totalSupply();
-      const finalBorrowerBalance = await mockDola.balanceOf(mockBorrower.address);
-
-      expect(finalTotalSupply).to.be.equal(initialTotalSupply);
-      expect(finalMinterBalance).to.be.equal(initialMinterBalance);
-      expect(initialBorrowerBalance).to.be.equal(finalBorrowerBalance);
-
-      expect(await contract.flashMinted()).to.be.equal(constants.Zero);
-    });
   });
 
   describe("Collection", async function () {
@@ -192,16 +166,6 @@ describe("Dola Flash Minter", function () {
   });
 
   describe("Setters", async function () {
-    it("emits event when setting flash loan rate", async function () {
-      const previousRate = await contract.flashLoanRate();
-      const newRate = 10;
-      await expect(contract.setFlashLoanRate(newRate))
-        .to.emit(contract, "FlashLoanRateUpdated")
-        .withArgs(previousRate, newRate);
-
-      expect((await contract.flashLoanRate()).toNumber()).to.be.equal(newRate);
-    });
-
     it("emits event when setting treasury", async function () {
       const previousTreasury = await contract.treasury();
       const newTreasury = await userWallet.getAddress();
@@ -209,6 +173,16 @@ describe("Dola Flash Minter", function () {
         .to.emit(contract, "TreasuryUpdated")
         .withArgs(previousTreasury, newTreasury);
       expect(await contract.treasury()).to.be.equal(newTreasury);
+    });
+
+    it("emits event when setting max flash limit", async function () {
+      const previousLimit = await contract.maxFlashLimit();
+      const newLimit = DOLA("5000.0");
+      await expect(contract.setMaxFlashLimit(newLimit))
+        .to.emit(contract, "MaxFlashLimitUpdated")
+        .withArgs(previousLimit, newLimit);
+
+      expect(await contract.maxFlashLimit()).to.be.equal(newLimit);
     });
 
     it("fails when setting treasury with zero address", async function () {
@@ -221,7 +195,7 @@ describe("Dola Flash Minter", function () {
   describe("Views", async function () {
     it("returns max flash loan amount with dola", async function () {
       const maxLoan = await contract.maxFlashLoan(mockDola.address);
-      expect(maxLoan).to.be.equal(BigNumber.from(2).pow(112).sub(1));
+      expect(maxLoan).to.be.equal(DOLA("1000000.0"));
     });
 
     it("returns max flash loan amount with non dola", async function () {
@@ -229,11 +203,10 @@ describe("Dola Flash Minter", function () {
       expect(maxLoan).to.be.equal(constants.Zero);
     });
 
-    it("calculates flash loan fee", async function () {
-      const rate = await contract.flashLoanRate();
+    it("returns ZERO on flashFee", async function () {
       const loanAmount = ETH("100");
       const fee = await contract.flashFee(mockDola.address, loanAmount);
-      expect(fee).to.be.equal(loanAmount.mul(rate).div(constants.WeiPerEther));
+      expect(fee).to.be.equal(0);
     });
 
     it("fails to calculate flash loan fee when not dola", async function () {
@@ -242,8 +215,8 @@ describe("Dola Flash Minter", function () {
     });
   });
   describe("ACL", async function () {
-    it("forbids non owner to set flash loan rate", async function () {
-      await expect(contractAsUser.setFlashLoanRate(10)).to.be.revertedWith("Ownable: caller is not the owner");
+    it("forbids non owner to set max flash limit", async function () {
+      await expect(contractAsUser.setMaxFlashLimit(10)).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("forbids non owner to set treasury", async function () {

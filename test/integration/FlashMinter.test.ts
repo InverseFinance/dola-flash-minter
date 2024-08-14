@@ -23,6 +23,7 @@ describe("Flash loan integration", function () {
     [myWallet] = await ethers.getSigners();
     dolaContract = new Contract(DOLA_ADDRESS, ERC20ABI.abi, myWallet) as Erc20;
     flashMinter = await deployContract("MainnetDolaFlashMinter");
+    await flashMinter.setMaxFlashLimit(DOLA("100000000000.0"));
     borrower = await deployContract("TestFlashBorrower", [DOLA_ADDRESS, flashMinter.address]);
     await sudo_TransferToken(DOLA_ADDRESS, DOLA_WHALE, DOLA("100000.0"), borrower.address);
     await sudo_AddDolaMinter(flashMinter.address);
