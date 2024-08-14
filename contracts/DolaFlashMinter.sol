@@ -20,14 +20,13 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
     using Address for address;
     using Address for address payable;
     event FlashLoan(address receiver, address token, uint256 value);
-    event FlashLoanRateUpdated(uint256 oldRate, uint256 newRate);
     event TreasuryUpdated(address oldTreasury, address newTreasury);
     event MaxFlashLimitUpdated(uint256 oldLimit, uint256 newLimit);
 
     IERC20 public immutable dola;
+    uint256 public constant fee = 0;
     address public treasury;
     uint256 public flashMinted;
-    uint256 public flashLoanRate = 0.0008 ether;
     uint256 public maxFlashLimit;
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
@@ -53,15 +52,14 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         // Step 1: Mint Dola to receiver
         dola.mint(address(receiver), value);
         emit FlashLoan(address(receiver), token, value);
-        uint256 fee = flashFee(token, value);
 
         // Step 2: Make flashloan callback
         require(
             receiver.onFlashLoan(msg.sender, token, value, fee, data) == CALLBACK_SUCCESS,
             "FLASH_MINTER:CALLBACK_FAILURE"
         );
-        // Step 3: Retrieve (minted + fee) Dola from receiver
-        dola.safeTransferFrom(address(receiver), address(this), value + fee);
+        // Step 3: Retrieve minted Dola from receiver
+        dola.safeTransferFrom(address(receiver), address(this), value);
 
         // Step 4: Burn minted Dola (and leave accrued fees in contract)
         dola.burn(value);
@@ -80,11 +78,6 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         }
     }
 
-    function setFlashLoanRate(uint256 _newRate) external onlyOwner {
-        emit FlashLoanRateUpdated(flashLoanRate, _newRate);
-        flashLoanRate = _newRate;
-    }
-
     function setTreasury(address _newTreasury) external onlyOwner {
         require(_newTreasury != address(0), "FLASH_MINTER:INVALID_TREASURY");
         emit TreasuryUpdated(treasury, _newTreasury);
@@ -100,9 +93,9 @@ abstract contract DolaFlashMinter is Ownable, IERC3156FlashLender {
         return _token == address(dola) ? maxFlashLimit - flashMinted : 0;
     }
 
-    function flashFee(address _token, uint256 _value) public view override returns (uint256) {
+    function flashFee(address _token, uint256) public view override returns (uint256) {
         require(_token == address(dola), "FLASH_MINTER:NOT_DOLA");
-        return (_value * flashLoanRate) / 1e18;
+        return fee;
     }
 
     // solhint-disable-next-line no-empty-blocks
